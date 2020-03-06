@@ -14,6 +14,8 @@ MAX_REQUEST equ 200
 RAND_MIN equ 100
 RAND_MAX equ 999
 
+NUMBERS_PER_LINE equ 10
+
 section .data
     intro db "Random number generator and sorter, by Duncan Freeman", 0
     request_prompt db "Enter the number of integers you wish to generate below (between 10 and 200):", 0
@@ -25,23 +27,24 @@ section .bss
 section .text
     
 main:
+    ; Introduce program
     call introduce_program
 
+    ; Request number of integers to generate
     push requested_integers ; OFFSET
     call request_range
 
+    ; Generate random integers in range
     push RAND_MAX
     push RAND_MIN
     push dword [requested_integers] ; No []
     push integers ; OFFSET
     call random_generation
 
+    ; Print random generated integers
     push dword [requested_integers]
     push integers
     call print_array
-    ; mov eax, [requested_integers] ; without []
-    ; call WriteInt
-    ; call Crlf
 
 stop:
     ; Exit with EXIT_SUCCESS
@@ -119,14 +122,27 @@ print_array:
     push ebp
     mov ebp, esp
 
-    mov ecx, [ebp+12]
-    mov ebx, [ebp+8]
+    mov edx, 0 ; Columns/Row counter
+    mov ecx, [ebp+12] ; Loop counter
+    mov ebx, [ebp+8] ; Pointer to the array element
     print_loop:
+        ; Print *edx and a space
         mov eax, [ebx]
         call WriteInt
+        mov eax, ' '
+        call WriteChar
+
+        ; Move to a new row if we've filled this one
+        inc edx
+        cmp edx, NUMBERS_PER_LINE 
+        jl print_loop_continue
+        mov edx, 0
         call Crlf
+        print_loop_continue:
+
         add ebx, 4
         loop print_loop
+    call Crlf
 
     pop ebp
     ret 8
