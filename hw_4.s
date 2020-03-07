@@ -46,6 +46,18 @@ main:
     push integers
     call print_array
 
+    call Crlf
+
+    ; Sort generated integers
+    push dword [requested_integers]
+    push integers
+    call sort_array
+
+    ; Print sorted integers
+    push dword [requested_integers]
+    push integers
+    call print_array
+
 stop:
     ; Exit with EXIT_SUCCESS
     mov edi, 0
@@ -140,9 +152,61 @@ print_array:
         call Crlf
         print_loop_continue:
 
+        ; Increase array pointer and loop
         add ebx, 4
         loop print_loop
     call Crlf
+
+    pop ebp
+    ret 8
+
+; Sorts the array
+; Receives:
+;   ebp+12: Number of integers to sort
+;   ebp+ 8: Pointer to integer array
+sort_array:
+    push ebp
+    mov ebp, esp
+    
+    mov ebx, [ebp+8] ; Pointer to array beginning
+    mov ecx, [ebp+12] ; k
+    sub ecx, 1 ; k = len - 1
+
+    sort_array_top_loop:
+        mov edx, ecx ; i = k
+
+        push ecx
+        sub ecx, 1 ; j
+
+        sort_array_inner_loop:
+
+            mov eax, [ebx + 4*ecx]
+            cmp [ebx + 4*edx], eax
+            jle sort_array_skip
+                mov edx, ecx ; i = j
+                sort_array_skip:
+
+            dec ecx
+            cmp ecx, 0
+            jge sort_array_inner_loop
+        early_exit:
+
+        pop ecx
+
+        mov esi, [ebx + 4*edx]
+        mov edi, [ebx + 4*ecx]
+        mov [ebx + 4*edx], edi
+        mov [ebx + 4*ecx], esi
+        loop sort_array_top_loop
+
+; for (k = request; k > 1; k--) {
+;   i = k;
+;   for (j = request; j > k + 1; j--) {
+;       if(array[j] < array[i])
+;           i = j;
+;   }
+;   exchange(array[k], array[i]);
+; }
 
     pop ebp
     ret 8
