@@ -19,6 +19,9 @@ NUMBERS_PER_LINE equ 10
 section .data
     intro db "Random number generator and sorter, by Duncan Freeman", 0
     request_prompt db "Enter the number of integers you wish to generate below (between 10 and 200):", 0
+    average_msg db "Average:", 0
+    median_msg db "Average:", 0
+    outro db "Goodbye.", 0
 
 section .bss
     integers resd MAX_REQUEST ;DUP(0)
@@ -45,7 +48,6 @@ main:
     push dword [requested_integers] ; No []
     push integers ; OFFSET
     call print_array
-
     call Crlf
 
     ; Sort generated integers
@@ -57,16 +59,22 @@ main:
     push dword [requested_integers] ; No []
     push integers ; OFFSET
     call display_average
+    call Crlf
 
     ; Calculate and display median
     push dword [requested_integers] ; No []
     push integers ; OFFSET
     call display_median
+    call Crlf
 
     ; Print sorted integers
     push dword [requested_integers]
     push integers
     call print_array
+    call Crlf
+
+    ; Say goodbye
+    call goodbye
 
 stop:
     ; Exit with EXIT_SUCCESS
@@ -76,7 +84,7 @@ stop:
 ; Introduces the program
 ; Clobbers: edx
 introduce_program:
-    mov edx, intro
+    mov edx, intro ; OFFSET
     call WriteString
     call Crlf
     ret
@@ -89,16 +97,17 @@ request_range:
     push ebp ; Set up stack frame
     mov ebp, esp
 
-    mov edx, request_prompt
-    call WriteString
-    call Crlf
-    call ReadInt
-    cmp eax, MIN_REQUEST
-    jl request_range
-    cmp eax, MAX_REQUEST
-    jg request_range
-    mov ebx, [ebp+8] ; ebx = ptr to n requested integers
-    mov [ebx], eax
+    request_loop:
+        mov edx, request_prompt
+        call WriteString
+        call Crlf
+        call ReadInt
+        cmp eax, MIN_REQUEST
+        jl request_loop
+        cmp eax, MAX_REQUEST
+        jg request_loop
+        mov ebx, [ebp+8] ; ebx = ptr to n requested integers
+        mov [ebx], eax
 
     pop ebp 
     ret 4 ; Destructure stack frame
@@ -246,6 +255,9 @@ display_average:
     div ebx
 
     ; Display average
+    mov edx, average_msg
+    call WriteString
+    call Crlf
     call WriteInt
     call Crlf
 
@@ -286,8 +298,19 @@ display_median:
     dm_end:
 
     ; Display median
+    mov edx, median_msg
+    call WriteString
+    call Crlf
     call WriteInt
     call Crlf
 
     pop ebp
     ret 8
+
+; Says goodbye to the user
+; Clobbers: edx
+goodbye:
+    mov edx, outro ; OFFSET
+    call WriteString
+    call Crlf
+    ret
