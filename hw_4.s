@@ -42,16 +42,26 @@ main:
     call random_generation
 
     ; Print random generated integers
-    push dword [requested_integers]
-    push integers
+    push dword [requested_integers] ; No []
+    push integers ; OFFSET
     call print_array
 
     call Crlf
 
     ; Sort generated integers
-    push dword [requested_integers]
-    push integers
+    push dword [requested_integers] ; No []
+    push integers ; OFFSET
     call sort_array
+
+    ; Calculate and display average
+    push dword [requested_integers] ; No []
+    push integers ; OFFSET
+    call display_average
+
+    ;; Calculate and display median
+    ;push dword [requested_integers] ; No []
+    ;push integers ; OFFSET
+    ;call display_median
 
     ; Print sorted integers
     push dword [requested_integers]
@@ -64,6 +74,7 @@ stop:
     call exit
 
 ; Introduces the program
+; Clobbers: edx
 introduce_program:
     mov edx, intro
     call WriteString
@@ -71,8 +82,9 @@ introduce_program:
     ret
 
 ; Request number of generated integers from user
-; Receives: Pointer to requested integers on stack
+; Receives: Pointer to destination requested integers
 ; Returns: User input (validated) integer in global
+; Clobbers: eax, ebx, edx
 request_range:
     push ebp ; Set up stack frame
     mov ebp, esp
@@ -97,6 +109,7 @@ request_range:
 ;   ebp+16: Minimum integer
 ;   ebp+12: Number of requested integers
 ;   ebp+ 8: Pointer to destination for integers
+; Clobbers: eax, ebx, ecx, edx
 random_generation:
     push ebp
     mov ebp, esp
@@ -130,6 +143,7 @@ random_generation:
 ; Receives:
 ;   ebp+12: Number of integers to print
 ;   ebp+ 8: Pointer to integer array
+; Clobbers: eax, ebx, ecx, edx
 print_array:
     push ebp
     mov ebp, esp
@@ -164,7 +178,9 @@ print_array:
 ; Receives:
 ;   ebp+12: Number of integers to sort
 ;   ebp+ 8: Pointer to integer array
+; Clobbers: eax, ebx, ecx, edx, edi, esi
 sort_array:
+    ; Create stack frame
     push ebp
     mov ebp, esp
     
@@ -175,6 +191,7 @@ sort_array:
     sort_array_top_loop:
         mov edx, ecx ; i = k
 
+        ; Enter inner loop
         push ecx
         sub ecx, 1 ; j
 
@@ -184,29 +201,53 @@ sort_array:
             cmp [ebx + 4*edx], eax
             jle sort_array_skip
                 mov edx, ecx ; i = j
-                sort_array_skip:
+            sort_array_skip:
 
             dec ecx
             cmp ecx, 0
             jge sort_array_inner_loop
-        early_exit:
 
         pop ecx
 
+        ; Swap elements
         mov esi, [ebx + 4*edx]
         mov edi, [ebx + 4*ecx]
         mov [ebx + 4*edx], edi
         mov [ebx + 4*ecx], esi
         loop sort_array_top_loop
 
-; for (k = request; k > 1; k--) {
-;   i = k;
-;   for (j = request; j > k + 1; j--) {
-;       if(array[j] < array[i])
-;           i = j;
-;   }
-;   exchange(array[k], array[i]);
-; }
+    ; Destructure stack frame and return
+    pop ebp
+    ret 8
+
+; Prints the average of the specified array
+; Receives:
+;   ebp+12: Number of integers to average
+;   ebp+ 8: Pointer to integer array
+; Clobbers: eax, ebx, ecx, edx
+display_average:
+    push ebp
+    mov ebp, esp
+
+    mov eax, 0 ; Accumulator for average
+    mov ecx, [ebp+12] ; Loop counter
+    mov ebx, [ebp+8] ; Pointer to the array element
+    average_loop:
+        ; Print *edx and a space
+        add eax, [ebx]
+
+        ; Increase array pointer and loop
+        add ebx, 4
+        loop average_loop
+
+    ; Divide accumulator by count
+    mov ebx, [ebp+12]
+    mov edx, 0
+    div ebx
+
+    ; Display average
+    call WriteInt
+    call Crlf
 
     pop ebp
     ret 8
