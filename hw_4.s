@@ -18,9 +18,11 @@ NUMBERS_PER_LINE equ 10
 
 section .data
     intro db "Random number generator and sorter, by Duncan Freeman", 0
+    unsorted_label db "Unsorted:", 0
+    sorted_label db "Sorted:", 0
     request_prompt db "Enter the number of integers you wish to generate below (between 10 and 200):", 0
     average_msg db "Average:", 0
-    median_msg db "Average:", 0
+    median_msg db "Median:", 0
     outro db "Goodbye.", 0
 
 section .bss
@@ -44,6 +46,11 @@ main:
     push integers ; OFFSET
     call random_generation
 
+    ; Display "Unsorted:"
+    mov edx, unsorted_label ; OFFSET
+    call WriteString
+    call Crlf
+
     ; Print random generated integers
     push dword [requested_integers] ; No []
     push integers ; OFFSET
@@ -65,6 +72,11 @@ main:
     push dword [requested_integers] ; No []
     push integers ; OFFSET
     call display_median
+    call Crlf
+
+    ; Display "Sorted:"
+    mov edx, sorted_label ; OFFSET
+    call WriteString
     call Crlf
 
     ; Print sorted integers
