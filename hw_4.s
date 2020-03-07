@@ -58,10 +58,10 @@ main:
     push integers ; OFFSET
     call display_average
 
-    ;; Calculate and display median
-    ;push dword [requested_integers] ; No []
-    ;push integers ; OFFSET
-    ;call display_median
+    ; Calculate and display median
+    push dword [requested_integers] ; No []
+    push integers ; OFFSET
+    call display_median
 
     ; Print sorted integers
     push dword [requested_integers]
@@ -246,6 +246,46 @@ display_average:
     div ebx
 
     ; Display average
+    call WriteInt
+    call Crlf
+
+    pop ebp
+    ret 8
+
+
+; Prints the median of the specified array
+; Precondition: Array is sorted
+; Receives:
+;   ebp+12: Number of integers to average
+;   ebp+ 8: Pointer to integer array
+; Clobbers: eax, ebx, ecx, edx
+display_median:
+    push ebp
+    mov ebp, esp
+
+    mov ebx, [ebp+8]
+    mov ecx, [ebp+12]
+    mov edx, ecx
+    shr edx, 1
+
+    test ecx, 1b
+    je dm_is_even
+
+        ; If it is odd, pick the middle
+        mov eax, [ebx + 4*edx]
+
+        jmp dm_end
+    dm_is_even:
+
+        ; If it is even, average the two centers
+        mov eax, [ebx + 4*edx]
+        dec edx
+        add eax, [ebx + 4*edx]
+        shr eax, 1
+
+    dm_end:
+
+    ; Display median
     call WriteInt
     call Crlf
 
